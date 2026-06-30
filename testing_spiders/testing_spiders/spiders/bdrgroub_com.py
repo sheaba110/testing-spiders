@@ -5,6 +5,45 @@ from ..items import ItemsCrawler
 from scrapy.loader import ItemLoader
 import re
 
+infinite_scroll_script = """
+    async () => {
+        let lastCount = 0;
+        let sameCountTimes = 0;
+        let iterations = 0;
+        const maxIterations = 400;
+
+        while (iterations < maxIterations) {
+            iterations++;
+
+            window.scrollTo(0, document.body.scrollHeight);
+            await new Promise(r => setTimeout(r, 2500));
+
+            const btn = [...document.querySelectorAll('a')].find(
+                a => a.textContent.includes('Load Next Products')
+            );
+
+            if (btn) {
+                btn.scrollIntoView();
+                await new Promise(r => setTimeout(r, 500));
+                btn.click();
+                await new Promise(r => setTimeout(r, 3500));
+            }
+
+            const products = document.querySelectorAll('.product-thumb, .product-layout').length;
+
+            if (products === lastCount) {
+                sameCountTimes++;
+                if (sameCountTimes > 6) break; 
+            } else {
+                sameCountTimes = 0;
+            }
+            lastCount = products;
+            console.log('products so far:', products, 'iteration:', iterations);
+        }
+        return lastCount;
+    }
+    """
+
 
 def extract_price_number(text):
     if text:
@@ -35,45 +74,7 @@ class BadrgrbSpider(scrapy.Spider):
                             "wait_for_selector", "div.product-thumb", timeout=60000
                         ),
                         PageMethod(
-                            "evaluate",
-                            """
-    async () => {
-        let lastCount = 0;
-        let sameCountTimes = 0;
-        let iterations = 0;
-        const maxIterations = 400; // حد أقصى أمان
-
-        while (iterations < maxIterations) {
-            iterations++;
-
-            window.scrollTo(0, document.body.scrollHeight);
-            await new Promise(r => setTimeout(r, 2500));
-
-            const btn = [...document.querySelectorAll('a')].find(
-                a => a.textContent.includes('Load Next Products')
-            );
-
-            if (btn) {
-                btn.scrollIntoView();
-                await new Promise(r => setTimeout(r, 500));
-                btn.click();
-                await new Promise(r => setTimeout(r, 3500));
-            }
-
-            const products = document.querySelectorAll('.product-thumb, .product-layout').length;
-
-            if (products === lastCount) {
-                sameCountTimes++;
-                if (sameCountTimes > 6) break; // زودنا عدد المحاولات قبل ما يوقف
-            } else {
-                sameCountTimes = 0;
-            }
-            lastCount = products;
-            console.log('products so far:', products, 'iteration:', iterations);
-        }
-        return lastCount;
-    }
-    """,
+                            "evaluate", infinite_scroll_script
                         ),
                     ],
                     "playwright_context": "default",
