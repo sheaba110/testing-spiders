@@ -31,12 +31,49 @@ class BadrgrbSpider(scrapy.Spider):
                 meta={
                     "playwright": True,
                     "playwright_page_methods": [
-                        PageMethod("wait_for_timeout", 5000),
                         PageMethod(
-                            "screenshot", path="debug_docker_page.png", full_page=True
+                            "wait_for_selector", "div.product-thumb", timeout=60000
                         ),
                         PageMethod(
-                            "wait_for_selector", "div.main-products", timeout=60000
+                            "evaluate",
+                            """
+    async () => {
+        let lastCount = 0;
+        let sameCountTimes = 0;
+        let iterations = 0;
+        const maxIterations = 400; // حد أقصى أمان
+
+        while (iterations < maxIterations) {
+            iterations++;
+
+            window.scrollTo(0, document.body.scrollHeight);
+            await new Promise(r => setTimeout(r, 2500));
+
+            const btn = [...document.querySelectorAll('a')].find(
+                a => a.textContent.includes('Load Next Products')
+            );
+
+            if (btn) {
+                btn.scrollIntoView();
+                await new Promise(r => setTimeout(r, 500));
+                btn.click();
+                await new Promise(r => setTimeout(r, 3500));
+            }
+
+            const products = document.querySelectorAll('.product-thumb, .product-layout').length;
+
+            if (products === lastCount) {
+                sameCountTimes++;
+                if (sameCountTimes > 6) break; // زودنا عدد المحاولات قبل ما يوقف
+            } else {
+                sameCountTimes = 0;
+            }
+            lastCount = products;
+            console.log('products so far:', products, 'iteration:', iterations);
+        }
+        return lastCount;
+    }
+    """,
                         ),
                     ],
                     "playwright_context": "default",

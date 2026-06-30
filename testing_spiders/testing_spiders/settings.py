@@ -97,3 +97,5 @@ TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
 PLAYWRIGHT_LAUNCH_OPTIONS = {
     "headless": False,
 }
+
+PLAYWRIGHT_DEFAULT_NAVIGATION_TIMEOUT = 600000 

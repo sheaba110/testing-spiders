@@ -1,0 +1,27 @@
+# Python virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Python cache and bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Scrapy artifacts
+.scrapy/
+*.log
+*.jl
+output/
+results/
+
+# Local runtime files
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
